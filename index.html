@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>نظام تتبع تحويلات الأموال — Offline-friendly</title>
+
+  <!-- Minimal styling (self-contained) -->
+  <style>
+    :root{
+      --bg:#f4f6f9; --card:#fff; --primary:#0b7285; --muted:#6c757d;
+      --accent:#16a085; --danger:#e55353; --radius:10px;
+      --gap:12px;
+    }
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Arial;}
+    body{margin:0;background:var(--bg);color:#0f1724;padding:16px;}
+    .wrap{max-width:1100px;margin:0 auto;display:grid;gap:16px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+    h1{font-size:20px;margin:0}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{padding:8px 12px;border-radius:8px;border:0;background:var(--primary);color:#fff;cursor:pointer}
+    button.ghost{background:transparent;color:var(--primary);border:1px solid rgba(11,114,133,0.12)}
+    .card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:0 6px 18px rgba(12,13,14,0.04)}
+    .grid{display:grid;gap:12px}
+    .two-col{grid-template-columns:1fr 2fr}
+    .stats{display:flex;gap:10px;flex-wrap:wrap}
+    .stat{flex:1;background:linear-gradient(180deg,#fff,#fbfeff);padding:12px;border-radius:10px;min-width:140px}
+    .stat b{display:block;font-size:18px}
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    input,select{padding:8px;border-radius:8px;border:1px solid rgba(11,114,133,0.08);min-width:120px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:10px;border-bottom:1px solid #eef2f4;text-align:right;font-size:14px}
+    .actions{display:flex;gap:6px;justify-content:flex-end}
+    .chip{display:inline-block;padding:6px 8px;border-radius:999px;background:#f1f5f6;color:var(--muted);font-weight:600}
+    .status-pending{color:#b9770e}
+    .status-completed{color:#0f5132}
+    .status-cancelled{color:var(--danger)}
+    .modal-wrap{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);z-index:999}
+    .modal{width:520px;max-width:95%;background:var(--card);border-radius:12px;padding:14px}
+    .row{display:flex;gap:8px;align-items:center}
+    .row.col{flex-direction:column;align-items:stretch}
+    label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
+    .right{margin-left:auto}
+    small{color:var(--muted)}
+    @media (max-width:900px){
+      .two-col{grid-template-columns:1fr}
+      header{flex-direction:column;align-items:stretch}
+      .controls{justify-content:space-between}
+      th,td{text-align:right;font-size:13px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1 id="app-title">نظام تتبع تحويلات الأموال</h1>
+        <small id="subtitle">غرفة عمل خفيفة ومتوافقة مع اتصال بطيء — يعمل مباشرة مع Firebase</small>
+      </div>
+      <div class="controls">
+        <select id="lang-select" title="Language">
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+        <button id="btn-add-currency" class="ghost">+ عملة</button>
+        <button id="btn-new-transfer">+ تحويل جديد</button>
+      </div>
+    </header>
+
+    <section class="grid two-col">
+      <!-- LEFT: filters + currencies -->
+      <div class="grid">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong id="filters-title">الفلاتر</strong>
+            <button id="btn-save-defaults" class="ghost">حفظ كافتراضي</button>
+          </div>
+
+          <div class="filters">
+            <select id="status-filter">
+              <option value="all">الكل</option>
+              <option value="pending">قيد الانتظار</option>
+              <option value="completed">مكتمل</option>
+              <option value="cancelled">ملغي</option>
+            </select>
+            <select id="currency-filter">
+              <option value="all">الكل</option>
+            </select>
+            <input type="date" id="start-date">
+            <input type="date" id="end-date">
+            <button id="btn-apply" class="ghost">تطبيق</button>
+            <button id="btn-reset" class="ghost">إعادة</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong id="currency-title">العملات</strong>
+          <div id="currency-list" style="margin-top:10px;display:grid;gap:10px"></div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: stats + transfers -->
+      <div class="grid">
+        <div class="card">
+          <div class="stats">
+            <div class="stat"><small id="lbl-total-text">إجمالي</small><b id="lbl-total">0 <span id="lbl-total-curr">USD</span></b></div>
+            <div class="stat"><small id="lbl-count-text">عدد التحويلات</small><b id="lbl-count">0</b></div>
+            <div class="stat"><small id="lbl-fees-text">إجمالي العمولات</small><b id="lbl-fees">0</b></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong id="transfers-title">تحويلات الأموال</strong>
+            <div class="right"><small id="last-sync">—</small></div>
+          </div>
+
+          <div style="overflow:auto">
+            <table id="transfers-table">
+              <thead>
+                <tr>
+                  <th>المرجع</th><th>المرسل</th><th>المستلم</th><th>المبلغ</th><th>التاريخ</th><th>الحالة</th><th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="transfers-body">
+                <!-- rows injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-wrap" id="modal-wrap">
+    <div class="modal" role="dialog" aria-modal="true" id="modal">
+      <!-- content injected -->
+    </div>
+  </div>
+
+  <!-- Minimal external: Firebase (required). Replace versions as needed. -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+  /***************************************************************
+   * Replace this firebaseConfig with your project's config.
+   * See the setup instructions below to get these values.
+   ***************************************************************/
+  const firebaseConfig = {
+    apiKey: "REPLACE_WITH_YOUR_API_KEY",
+    authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
+    databaseURL: "REPLACE_WITH_YOUR_DATABASE_URL",
+    projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
+    storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
+    messagingSenderId: "REPLACE",
+    appId: "REPLACE"
+  };
+
+  /*********************** App logic ****************************/
+  // initialize firebase app
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  // local application state
+  const state = {
+    uid: null,
+    currencies: {}, // {USD:{code:'USD',name:'...'}, ...}
+    transfers: {},
+    defaults: {}
+  };
+
+  // DOM refs
+  const currencyFilter = document.getElementById('currency-filter');
+  const currencyListEl = document.getElementById('currency-list');
+  const transfersBody = document.getElementById('transfers-body');
+  const lblTotal = document.getElementById('lbl-total');
+  const lblCount = document.getElementById('lbl-count');
+  const lblFees = document.getElementById('lbl-fees');
+  const lblTotalCurr = document.getElementById('lbl-total-curr');
+  const modalWrap = document.getElementById('modal-wrap');
+  const modal = document.getElementById('modal');
+  const lastSync = document.getElementById('last-sync');
+
+  // helper: show modal
+  function showModal(html){
+    modal.innerHTML = html;
+    modalWrap.style.display = 'flex';
+  }
+  function closeModal(){ modalWrap.style.display = 'none'; modal.innerHTML = ''; }
+
+  // basic sanitization for displayed text
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+  /***************** Anonymous Auth & initial load *****************/
+  function startApp(){
+    // sign in anonymously so we can store per-user defaults
+    auth.signInAnonymously()
+      .then(userCred => {
+        state.uid = userCred.user.uid;
+        console.log('signed in anonymously as', state.uid);
+        // load data once user is signed in
+        loadCurrencies();
+        loadTransfers();
+        loadUserDefaults();
+      })
+      .catch(err => {
+        console.error('Auth error:', err);
+        alert('خطأ في الاتصال بمصادقة Firebase — تأكد من إعداد الميزة في لوحة Firebase.');
+      });
+  }
+
+  /***************** CURRENCIES *************************/
+  // Read currencies from /currencies (simple flat key -> object)
+  function loadCurrencies(){
+    const ref = db.ref('currencies');
+    ref.on('value', snap => {
+      const val = snap.val() || {};
+      state.currencies = val;
+      renderCurrencies();
+      renderCurrencyFilter();
+      updateStats();
+      lastSync.textContent = new Date().toLocaleString();
+    }, err => {
+      console.error('DB error (currencies):', err);
+    });
+  }
+
+  function renderCurrencies(){
+    currencyListEl.innerHTML = '';
+    const entries = Object.keys(state.currencies).map(k => state.currencies[k]);
+    if(entries.length===0){
+      currencyListEl.innerHTML = '<small class="chip">لا توجد عملات بعد — أضف واحدة</small>';
+      return;
+    }
+    entries.forEach(c => {
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.style.justifyContent = 'space-between';
+      el.innerHTML = `<div style="display:flex;flex-direction:column;align-items:flex-end">
+                        <strong>${esc(c.code)}</strong>
+                        <small>${esc(c.name || '')}</small>
+                      </div>
+                      <div style="display:flex;gap:6px">
+                        <button class="ghost" onclick="editCurrency('${c.code}')">تعديل</button>
+                        <button class="ghost" onclick="removeCurrency('${c.code}')" style="color:var(--danger)">حذف</button>
+                      </div>`;
+      currencyListEl.appendChild(el);
+    });
+  }
+
+  function renderCurrencyFilter(){
+    const sel = currencyFilter;
+    const prev = sel.value || 'all';
+    sel.innerHTML = '<option value="all">الكل</option>';
+    Object.values(state.currencies).forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = `${c.code} ${c.name?(' - '+c.name):''}`;
+      sel.appendChild(opt);
+    });
+    sel.value = prev;
+  }
+
+  // Add currency modal
+  document.getElementById('btn-add-currency').addEventListener('click', ()=>{
+    showModal(`
+      <div class="row col">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>أضف / عدل عملة</strong>
+          <button onclick="closeModal()" class="ghost">إغلاق</button>
+        </div>
+        <div>
+          <label>كود العملة (مثال: USD)</label>
+          <input id="mc-code" maxlength="6" />
+        </div>
+        <div>
+          <label>اسم العملة (اختياري)</label>
+          <input id="mc-name" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="saveCurrency()" class="ghost">حفظ</button>
+        </div>
+      </div>
+    `);
+    document.getElementById('mc-code').focus();
+  });
+
+  // Save currency to DB
+  function saveCurrency(){
+    const code = (document.getElementById('mc-code').value || '').trim().toUpperCase();
+    const name = (document.getElementById('mc-name').value || '').trim();
+    if(!code){ alert('أدخل كود العملة (مثال: USD)'); return; }
+    // write to /currencies/<code>
+    db.ref('currencies/' + code).set({ code, name })
+      .then(()=>{ closeModal(); })
+      .catch(err=>{ console.error(err); alert('خطأ في حفظ العملة'); });
+  }
+
+  // Edit currency (prefill)
+  function editCurrency(code){
+    const c = state.currencies[code];
+    if(!c) return alert('عملة غير موجودة');
+    showModal(`
+      <div class="row col">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>تعديل عملة ${esc(code)}</strong>
+          <button onclick="closeModal()" class="ghost">إغلاق</button>
+        </div>
+        <div>
+          <label>كود العملة</label>
+          <input id="mc-code" value="${esc(c.code)}" disabled />
+        </div>
+        <div>
+          <label>اسم العملة</label>
+          <input id="mc-name" value="${esc(c.name||'')}" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="saveCurrency()" class="ghost">حفظ</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function removeCurrency(code){
+    if(!confirm('هل أنت متأكد من حذف العملة ' + code + '?')) return;
+    // remove key
+    db.ref('currencies/' + code).remove().catch(err=>{ console.error(err); alert('فشل الحذف'); });
+  }
+
+  /***************** TRANSFERS *************************/
+  function loadTransfers(){
+    const ref = db.ref('transfers');
+    ref.on('value', snap => {
+      state.transfers = snap.val() || {};
+      renderTransfers();
+      updateStats();
+      lastSync.textContent = new Date().toLocaleString();
+    }, err => { console.error('DB error (transfers):', err); });
+  }
+
+  function renderTransfers(){
+    transfersBody.innerHTML = '';
+    const keys = Object.keys(state.transfers);
+    if(keys.length===0){
+      transfersBody.innerHTML = '<tr><td colspan="7" style="text-align:center"><small class="chip">لا توجد تحويلات</small></td></tr>';
+      return;
+    }
+    // show latest first
+    keys.reverse().forEach(k=>{
+      const t = state.transfers[k];
+      const tr = document.createElement('tr');
+      const statusClass = t.status === 'completed' ? 'status-completed' : (t.status==='cancelled' ? 'status-cancelled' : 'status-pending');
+      tr.innerHTML = `<td>${esc(k)}</td>
+                      <td>${esc(t.sender)}</td>
+                      <td>${esc(t.receiver)}</td>
+                      <td>${Number(t.amount).toLocaleString()} ${esc(t.currency)}</td>
+                      <td>${esc(t.date)}</td>
+                      <td><span class="${statusClass}">${esc(t.status)}</span></td>
+                      <td class="actions">
+                        <button class="ghost" onclick="editTransfer('${k}')">تعديل</button>
+                        <button class="ghost" onclick="deleteTransfer('${k}')" style="color:var(--danger)">حذف</button>
+                      </td>`;
+      transfersBody.appendChild(tr);
+    });
+  }
+
+  // create new transfer
+  document.getElementById('btn-new-transfer').addEventListener('click', ()=> {
+    const currencyOptions = Object.values(state.currencies).map(c => `<option value="${esc(c.code)}">${esc(c.code)}</option>`).join('') || '<option value="USD">USD</option>';
+    showModal(`
+      <div class="row col">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>تحويل جديد</strong>
+          <button onclick="closeModal()" class="ghost">إغلاق</button>
+        </div>
+        <div>
+          <label>المرسل</label><input id="t-sender" />
+        </div>
+        <div>
+          <label>المستلم</label><input id="t-receiver" />
+        </div>
+        <div>
+          <label>المبلغ</label><input id="t-amount" type="number" />
+        </div>
+        <div>
+          <label>العملة</label>
+          <select id="t-currency">${currencyOptions}</select>
+        </div>
+        <div>
+          <label>التاريخ</label><input id="t-date" type="date" value="${new Date().toISOString().slice(0,10)}" />
+        </div>
+        <div>
+          <label>الحالة</label>
+          <select id="t-status"><option value="pending">قيد الانتظار</option><option value="completed">مكتمل</option><option value="cancelled">ملغي</option></select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="closeModal()" class="ghost">إلغاء</button>
+          <button onclick="saveTransfer()" class="">حفظ</button>
+        </div>
+      </div>
+    `);
+  });
+
+  function saveTransfer(key){
+    // if key passed, it's edit; else create
+    const isEdit = !!key;
+    const id = key || ('TRX-' + Date.now());
+    const sender = (document.getElementById('t-sender')||{}).value || '';
+    const receiver = (document.getElementById('t-receiver')||{}).value || '';
+    const amount = Number((document.getElementById('t-amount')||{}).value || 0);
+    const currency = (document.getElementById('t-currency')||{}).value || 'USD';
+    const date = (document.getElementById('t-date')||{}).value || new Date().toISOString().slice(0,10);
+    const status = (document.getElementById('t-status')||{}).value || 'pending';
+    if(!sender || !receiver || !amount){ alert('أكمل الحقول المطلوبة'); return; }
+
+    const payload = { sender, receiver, amount, currency, date, status, createdBy: state.uid };
+    db.ref('transfers/' + id).set(payload)
+      .then(()=>{ closeModal(); })
+      .catch(err=>{ console.error(err); alert('فشل حفظ التحويل'); });
+  }
+
+  // edit transfer (prefill)
+  function editTransfer(id){
+    const t = state.transfers[id];
+    if(!t) return alert('تحويل غير موجود');
+    const currencyOptions = Object.values(state.currencies).map(c => `<option value="${esc(c.code)}" ${c.code===t.currency?'selected':''}>${esc(c.code)}</option>`).join('') || `<option>${t.currency}</option>`;
+    showModal(`
+      <div class="row col">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>تعديل تحويل ${esc(id)}</strong>
+          <button onclick="closeModal()" class="ghost">إغلاق</button>
+        </div>
+        <div><label>المرسل</label><input id="t-sender" value="${esc(t.sender)}" /></div>
+        <div><label>المستلم</label><input id="t-receiver" value="${esc(t.receiver)}" /></div>
+        <div><label>المبلغ</label><input id="t-amount" type="number" value="${esc(t.amount)}" /></div>
+        <div><label>العملة</label><select id="t-currency">${currencyOptions}</select></div>
+        <div><label>التاريخ</label><input id="t-date" type="date" value="${esc(t.date)}" /></div>
+        <div><label>الحالة</label><select id="t-status"><option value="pending" ${t.status==='pending'?'selected':''}>قيد الانتظار</option><option value="completed" ${t.status==='completed'?'selected':''}>مكتمل</option><option value="cancelled" ${t.status==='cancelled'?'selected':''}>ملغي</option></select></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button onclick="closeModal()" class="ghost">إلغاء</button>
+          <button onclick="saveTransfer('${id}')" class="">حفظ</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function deleteTransfer(id){
+    if(!confirm('حذف التحويل ' + id + ' ؟')) return;
+    db.ref('transfers/' + id).remove().catch(err=>{ console.error(err); alert('فشل الحذف'); });
+  }
+
+  /***************** STATS *************************/
+  function updateStats(){
+    const transfers = Object.values(state.transfers || {});
+    const filtered = transfers; // you can apply filters here (status/date/currency) if desired
+    const total = filtered.reduce((s,t)=>s + (Number(t.amount)||0), 0);
+    const count = filtered.length;
+    const fees = Math.round(total * 0.02); // sample fee calc (2%)
+    lblTotal.textContent = total.toLocaleString();
+    lblCount.textContent = count;
+    lblFees.textContent = fees.toLocaleString();
+    // default currency label
+    lblTotalCurr.textContent = (Object.values(state.currencies)[0] || {code:'USD'}).code;
+  }
+
+  /***************** User defaults (localStorage + firebase) *****************/
+  function loadUserDefaults(){
+    // first try localStorage
+    const local = localStorage.getItem('mt_defaults');
+    if(local){
+      try{ state.defaults = JSON.parse(local); applyDefaultsToUI(); }catch(e){}
+    }
+    // then fetch firebase stored defaults for this uid (if any)
+    db.ref('users/' + state.uid + '/defaults').once('value').then(snap=>{
+      const val = snap.val();
+      if(val){
+        state.defaults = Object.assign({}, state.defaults, val);
+        localStorage.setItem('mt_defaults', JSON.stringify(state.defaults));
+        applyDefaultsToUI();
+      }
+    }).catch(err=>{ console.warn('no defaults in firebase yet'); });
+  }
+
+  function applyDefaultsToUI(){
+    if(state.defaults.language) document.getElementById('lang-select').value = state.defaults.language;
+    if(state.defaults.currency) currencyFilter.value = state.defaults.currency;
+    if(state.defaults.status) document.getElementById('status-filter').value = state.defaults.status;
+    // other UI state you want to restore...
+  }
+
+  document.getElementById('btn-save-defaults').addEventListener('click', ()=> {
+    const defaults = {
+      language: document.getElementById('lang-select').value,
+      currency: document.getElementById('currency-filter').value,
+      status: document.getElementById('status-filter').value
+    };
+    state.defaults = defaults;
+    localStorage.setItem('mt_defaults', JSON.stringify(defaults));
+    // also write to firebase under users/<uid>/defaults
+    if(state.uid) db.ref('users/' + state.uid + '/defaults').set(defaults).then(()=> alert('تم حفظ الإعدادات الافتراضية')).catch(e=>{console.error(e); alert('فشل حفظ في Firebase')});
+  });
+
+  /***************** Filters apply/reset *************************/
+  document.getElementById('btn-apply').addEventListener('click', ()=>{
+    // simple client-side filter implementation:
+    const status = document.getElementById('status-filter').value;
+    const currency = document.getElementById('currency-filter').value;
+    const start = document.getElementById('start-date').value;
+    const end = document.getElementById('end-date').value;
+    // rebuild the view with filter
+    const all = Object.entries(state.transfers || {});
+    const filtered = all.filter(([k,t])=>{
+      if(status !== 'all' && t.status !== status) return false;
+      if(currency !== 'all' && t.currency !== currency) return false;
+      if(start && t.date < start) return false;
+      if(end && t.date > end) return false;
+      return true;
+    });
+    // render filtered
+    transfersBody.innerHTML = '';
+    if(filtered.length===0){ transfersBody.innerHTML = '<tr><td colspan="7" style="text-align:center"><small class="chip">لا توجد نتائج</small></td></tr>'; return; }
+    filtered.reverse().forEach(([k,t])=>{
+      const tr = document.createElement('tr');
+      const statusClass = t.status === 'completed' ? 'status-completed' : (t.status==='cancelled' ? 'status-cancelled' : 'status-pending');
+      tr.innerHTML = `<td>${esc(k)}</td>
+                      <td>${esc(t.sender)}</td>
+                      <td>${esc(t.receiver)}</td>
+                      <td>${Number(t.amount).toLocaleString()} ${esc(t.currency)}</td>
+                      <td>${esc(t.date)}</td>
+                      <td><span class="${statusClass}">${esc(t.status)}</span></td>
+                      <td class="actions">
+                        <button class="ghost" onclick="editTransfer('${k}')">تعديل</button>
+                        <button class="ghost" onclick="deleteTransfer('${k}')" style="color:var(--danger)">حذف</button>
+                      </td>`;
+      transfersBody.appendChild(tr);
+    });
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', ()=>{
+    document.getElementById('status-filter').value = 'all';
+    document.getElementById('currency-filter').value = 'all';
+    const today = new Date().toISOString().slice(0,10);
+    document.getElementById('end-date').value = today;
+    const oneWeekAgo = new Date(); oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+    document.getElementById('start-date').value = oneWeekAgo.toISOString().slice(0,10);
+    renderTransfers();
+  });
+
+  /***************** Edit currency / transfer functions must be globally accessible ***********/
+  window.saveCurrency = saveCurrency;
+  window.closeModal = closeModal;
+  window.editCurrency = editCurrency;
+  window.removeCurrency = removeCurrency;
+  window.saveTransfer = saveTransfer;
+  window.editTransfer = editTransfer;
+  window.deleteTransfer = deleteTransfer;
+
+  // initialize date fields
+  (function setDefaultDates(){
+    const today = new Date().toISOString().slice(0,10);
+    const oneWeek = new Date(); oneWeek.setDate(oneWeek.getDate()-7);
+    document.getElementById('end-date').value = today;
+    document.getElementById('start-date').value = oneWeek.toISOString().slice(0,10);
+  })();
+
+  // start the app
+  startApp();
+  </script>
+</body>
+</html>

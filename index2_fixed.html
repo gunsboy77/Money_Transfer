@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Transfer Agent System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: ltr;
+        }
+
+        body[dir="rtl"] {
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #34495e;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-tab.active {
+            background: #3498db;
+            box-shadow: 0 -3px 0 #2980b9;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .transfers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .transfers-table th,
+        .transfers-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .transfers-table th {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            font-weight: 600;
+        }
+
+        .transfers-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #fff, #f8f9fa);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-weight: 600;
+        }
+
+        .search-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #e74c3c;
+        }
+
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .export-buttons {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .transfers-table {
+                font-size: 12px;
+            }
+
+            .transfers-table th,
+            .transfers-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="lang-toggle" onclick="toggleLanguage()" id="langToggle">العربية</button>
+            <h1 id="mainTitle">Money Transfer Agent System</h1>
+            <p id="subtitle">Track, Manage & Report Money Transfers</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick=\"showTab(event, 'dashboard')\" id="tab-dashboard">Dashboard</button>
+            <button class="nav-tab" onclick=\"showTab(event, 'new-transfer')\" id="tab-new-transfer">New Transfer</button>
+            <button class="nav-tab" onclick=\"showTab(event, 'transfers')\" id="tab-transfers">All Transfers</button>
+            <button class="nav-tab" onclick=\"showTab(event, 'reports')\" id="tab-reports">Reports</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2 id="dashboard-title">Dashboard Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-transfers">0</div>
+                    <div class="stat-label" id="total-transfers-label">Total Transfers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-amount">$0</div>
+                    <div class="stat-label" id="total-amount-label">Total Amount</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pending-transfers">0</div>
+                    <div class="stat-label" id="pending-transfers-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completed-transfers">0</div>
+                    <div class="stat-label" id="completed-transfers-label">Completed</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3 id="recent-transfers-title">Recent Transfers</h3>
+                <div id="recent-transfers-list"></div>
+            </div>
+        </div>
+
+        <!-- New Transfer Tab -->
+        <div id="new-transfer" class="tab-content">
+            <h2 id="new-transfer-title">Create New Transfer</h2>
+            <form id="transfer-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="sender-name" id="sender-name-label">Sender Name</label>
+                        <input type="text" id="sender-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sender-phone" id="sender-phone-label">Sender Phone</label>
+                        <input type="tel" id="sender-phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="receiver-name" id="receiver-name-label">Receiver Name</label>
+                        <input type="text" id="receiver-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="receiver-phone" id="receiver-phone-label">Receiver Phone</label>
+                        <input type="tel" id="receiver-phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount" id="amount-label">Amount</label>
+                        <input type="number" id="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="currency" id="currency-label">Currency</label>
+                        <select id="currency" required>
+                            <option value="">Select Currency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exchange-rate" id="exchange-rate-label">Exchange Rate</label>
+                        <input type="number" id="exchange-rate" step="0.0001">
+                    </div>
+                    <div class="form-group">
+                        <label for="fees" id="fees-label">Transfer Fees</label>
+                        <input type="number" id="fees" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="destination-country" id="destination-country-label">Destination Country</label>
+                        <input type="text" id="destination-country" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="purpose" id="purpose-label">Transfer Purpose</label>
+                        <select id="purpose" required>
+                            <option value="">Select Purpose</option>
+                            <option value="family-support">Family Support</option>
+                            <option value="business">Business</option>
+                            <option value="education">Education</option>
+                            <option value="medical">Medical</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" id="submit-transfer">Create Transfer</button>
+                    <button type="reset" class="btn btn-warning" id="reset-form">Reset Form</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- All Transfers Tab -->
+        <div id="transfers" class="tab-content">
+            <h2 id="transfers-title">All Transfers</h2>
+            
+            <div class="search-filters">
+                <div class="form-group">
+                    <label for="search-id" id="search-id-label">Transfer ID</label>
+                    <input type="text" id="search-id" placeholder="Search by ID">
+                </div>
+                <div class="form-group">
+                    <label for="search-sender" id="search-sender-label">Sender Name</label>
+                    <input type="text" id="search-sender" placeholder="Search sender">
+                </div>
+                <div class="form-group">
+                    <label for="search-status" id="search-status-label">Status</label>
+                    <select id="search-status">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="search-date" id="search-date-label">Date</label>
+                    <input type="date" id="search-date">
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn" onclick="searchTransfers()" id="search-btn">Search</button>
+                <button class="btn btn-warning" onclick="clearSearch()" id="clear-search-btn">Clear</button>
+            </div>
+
+            <div id="transfers-table-container">
+                <table class="transfers-table" id="transfers-table">
+                    <thead>
+                        <tr>
+                            <th id="th-id">ID</th>
+                            <th id="th-date">Date</th>
+                            <th id="th-sender">Sender</th>
+                            <th id="th-receiver">Receiver</th>
+                            <th id="th-amount">Amount</th>
+                            <th id="th-status">Status</th>
+                            <th id="th-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transfers-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+            <h2 id="reports-title">Reports & Analytics</h2>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="report-start-date" id="report-start-date-label">Start Date</label>
+                    <input type="date" id="report-start-date">
+                </div>
+                <div class="form-group">
+                    <label for="report-end-date" id="report-end-date-label">End Date</label>
+                    <input type="date" id="report-end-date">
+                </div>
+                <div class="form-group">
+                    <label for="report-currency" id="report-currency-label">Currency</label>
+                    <select id="report-currency">
+                        <option value="">All Currencies</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="report-status" id="report-status-label">Status</label>
+                    <select id="report-status">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="export-buttons">
+                <button class="btn" onclick="generateReport()" id="generate-report-btn">Generate Report</button>
+                <button class="btn btn-success" onclick="exportToCSV()" id="export-csv-btn">Export CSV</button>
+                <button class="btn btn-warning" onclick="exportToPDF()" id="export-pdf-btn">Export PDF</button>
+            </div>
+
+            <div id="report-results"></div>
+        </div>
+    </div>
+
+    <!-- Transfer Details Modal -->
+    <div id="transfer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let transfers = [];
+        let currentLanguage = 'en';
+        let filteredTransfers = [];
+
+        // World currencies
+        const currencies = [
+            { code: 'USD', name: 'US Dollar', symbol: '$' },
+            { code: 'EUR', name: 'Euro', symbol: '€' },
+            { code: 'GBP', name: 'British Pound', symbol: '£' },
+            { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+            { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+            { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+            { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
+            { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+            { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+            { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+            { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
+            { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+            { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+            { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
+            { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+            { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+            { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+            { code: 'TWD', name: 'Taiwan Dollar', symbol: 'NT$' },
+            { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
+            { code: 'PLN', name: 'Polish Zloty', symbol: 'zł' },
+            { code: 'THB', name: 'Thai Baht', symbol: '฿' },
+            { code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp' },
+            { code: 'HUF', name: 'Hungarian Forint', symbol: 'Ft' },
+            { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč' },
+            { code: 'ILS', name: 'Israeli Shekel', symbol: '₪' },
+            { code: 'CLP', name: 'Chilean Peso', symbol: '$' },
+            { code: 'PHP', name: 'Philippine Peso', symbol: '₱' },
+            { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
+            { code: 'COP', name: 'Colombian Peso', symbol: '$' },
+            { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼' },
+            { code: 'MYR', name: 'Malaysian Ringgit', symbol: 'RM' },
+            { code: 'RON', name: 'Romanian Leu', symbol: 'lei' },
+            { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+            { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+            { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+            { code: 'EGP', name: 'Egyptian Pound', symbol: '£' },
+            { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
+            { code: 'BDT', name: 'Bangladeshi Taka', symbol: '৳' },
+            { code: 'LKR', name: 'Sri Lankan Rupee', symbol: '₨' },
+            { code: 'NPR', name: 'Nepalese Rupee', symbol: '₨' },
+            { code: 'AFN', name: 'Afghan Afghani', symbol: '؋' },
+            { code: 'IRR', name: 'Iranian Rial', symbol: '﷼' },
+            { code: 'IQD', name: 'Iraqi Dinar', symbol: 'ع.د' },
+            { code: 'JOD', name: 'Jordanian Dinar', symbol: 'د.ا' },
+            { code: 'KWD', name: 'Kuwaiti Dinar', symbol: 'د.ك' },
+            { code: 'LBP', name: 'Lebanese Pound', symbol: 'ل.ل' },
+            { code: 'QAR', name: 'Qatari Riyal', symbol: '﷼' },
+            { code: 'SYP', name: 'Syrian Pound', symbol: '£' },
+            { code: 'YER', name: 'Yemeni Rial', symbol: '﷼' },
+            { code: 'BHD', name: 'Bahraini Dinar', symbol: '.د.ب' },
+            { code: 'OMR', name: 'Omani Rial', symbol: '﷼' }
+        ];
+
+        // Translation object
+        const translations = {
+            en: {
+                'mainTitle': 'Money Transfer Agent System',
+                'subtitle': 'Track, Manage & Report Money Transfers',
+                'tab-dashboard': 'Dashboard',
+                'tab-new-transfer': 'New Transfer',
+                'tab-transfers': 'All Transfers',
+                'tab-reports': 'Reports',
+                'dashboard-title': 'Dashboard Overview',
+                'total-transfers-label': 'Total Transfers',
+                'total-amount-label': 'Total Amount',
+                'pending-transfers-label': 'Pending',
+                'completed-transfers-label': 'Completed',
+                'recent-transfers-title': 'Recent Transfers',
+                'new-transfer-title': 'Create New Transfer',
+                'sender-name-label': 'Sender Name',
+                'sender-phone-label': 'Sender Phone',
+                'receiver-name-label': 'Receiver Name',
+                'receiver-phone-label': 'Receiver Phone',
+                'amount-label': 'Amount',
+                'currency-label': 'Currency',
+                'exchange-rate-label': 'Exchange Rate',
+                'fees-label': 'Transfer Fees',
+                'destination-country-label': 'Destination Country',
+                'purpose-label': 'Transfer Purpose',
+                'submit-transfer': 'Create Transfer',
+                'reset-form': 'Reset Form',
+                'transfers-title': 'All Transfers',
+                'search-id-label': 'Transfer ID',
+                'search-sender-label': 'Sender Name',
+                'search-status-label': 'Status',
+                'search-date-label': 'Date',
+                'search-btn': 'Search',
+                'clear-search-btn': 'Clear',
+                'th-id': 'ID',
+                'th-date': 'Date',
+                'th-sender': 'Sender',
+                'th-receiver': 'Receiver',
+                'th-amount': 'Amount',
+                'th-status': 'Status',
+                'th-actions': 'Actions',
+                'reports-title': 'Reports & Analytics',
+                'report-start-date-label': 'Start Date',
+                'report-end-date-label': 'End Date',
+                'report-currency-label': 'Currency',
+                'report-status-label': 'Status',
+                'generate-report-btn': 'Generate Report',
+                'export-csv-btn': 'Export CSV',
+                'export-pdf-btn': 'Export PDF'
+            },
+            ar: {
+                'mainTitle': 'نظام وكيل تحويل الأموال',
+                'subtitle': 'تتبع وإدارة وتقارير تحويل الأموال',
+                'tab-dashboard': 'لوحة التحكم',
+                'tab-new-transfer': 'تحويل جديد',
+                'tab-transfers': 'جميع التحويلات',
+                'tab-reports': 'التقارير',
+                'dashboard-title': 'نظرة عامة على لوحة التحكم',
+                'total-transfers-label': 'إجمالي التحويلات',
+                'total-amount-label': 'إجمالي المبلغ',
+                'pending-transfers-label': 'قيد الانتظار',
+                'completed-transfers-label': 'مكتملة',
+                'recent-transfers-title': 'التحويلات الأخيرة',
+                'new-transfer-title': 'إنشاء تحويل جديد',
+                'sender-name-label': 'اسم المرسل',
+                'sender-phone-label': 'هاتف المرسل',
+                'receiver-name-label': 'اسم المستقبل',
+                'receiver-phone-label': 'هاتف المستقبل',
+                'amount-label': 'المبلغ',
+                'currency-label': 'العملة',
+                'exchange-rate-label': 'سعر الصرف',
+                'fees-label': 'رسوم التحويل',
+                'destination-country-label': 'بلد الوجهة',
+                'purpose-label': 'غرض التحويل',
+                'submit-transfer': 'إنشاء التحويل',
+                'reset-form': 'إعادة تعيين النموذج',
+                'transfers-title': 'جميع التحويلات',
+                'search-id-label': 'رقم التحويل',
+                'search-sender-label': 'اسم المرسل',
+                'search-status-label': 'الحالة',
+                'search-date-label': 'التاريخ',
+                'search-btn': 'بحث',
+                'clear-search-btn': 'مسح',
+                'th-id': 'الرقم',
+                'th-date': 'التاريخ',
+                'th-sender': 'المرسل',
+                'th-receiver': 'المستقبل',
+                'th-amount': 'المبلغ',
+                'th-status': 'الحالة',
+                'th-actions': 'الإجراءات',
+                'reports-title': 'التقارير والتحليلات',
+                'report-start-date-label': 'تاريخ البداية',
+                'report-end-date-label': 'تاريخ النهاية',
+                'report-currency-label': 'العملة',
+                'report-status-label': 'الحالة',
+                'generate-report-btn': 'إنشاء التقرير',
+                'export-csv-btn': 'تصدير CSV',
+                'export-pdf-btn': 'تصدير PDF'
+            }
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCurrencies();
+            loadTransfers();
+            updateDashboard();
+            displayTransfers();
+        });
+
+        // Initialize currency dropdowns
+        function initializeCurrencies() {
+            const currencySelect = document.getElementById('currency');
+            const reportCurrencySelect = document.getElementById('report-currency');
+            
+            currencies.forEach(currency => {
+                const option = document.createElement('option');
+                option.value = currency.code;
+                option.textContent = `${currency.code} - ${currency.name}`;
+                currencySelect.appendChild(option);
+                
+                const reportOption = document.createElement('option');
+                reportOption.value = currency.code;
+                reportOption.textContent = `${currency.code} - ${currency.name}`;
+                reportCurrencySelect.appendChild(reportOption);
+            });
+        }
+
+        // Toggle language
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'ar' : 'en';
+            document.body.setAttribute('dir', currentLanguage === 'ar' ? 'rtl' : 'ltr');
+            document.getElementById('langToggle').textContent = currentLanguage === 'en' ? 'العربية' : 'English';
+            
+            // Update all translatable elements
+            Object.keys(translations[currentLanguage]).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (element.tagName === 'INPUT' && element.type === 'submit') {
+                        element.value = translations[currentLanguage][key];
+                    } else if (element.tagName === 'BUTTON') { element.textContent = translations[currentLanguage][key]; } else {
+                        element.textContent = translations[currentLanguage][key];
+                    }
+                }
+            });
+        }
+
+        // Tab navigation
+        function showTab(evt, tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Remove active class from all nav tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked nav tab
+            event.target.classList.add('active');
+        }
+
+        // Generate unique transfer ID
+        function generateTransferId() {
+            return 'TXN' + Date.now() + Math.floor(Math.random() * 1000);
+        }
+
+        // Handle form submission
+        document.getElementById('transfer-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const transfer = {
+                id: generateTransferId(),
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString(),
+                senderName: document.getElementById('sender-name').value,
+                senderPhone: document.getElementById('sender-phone').value,
+                receiverName: document.getElementById('receiver-name').value,
+                receiverPhone: document.getElementById('receiver-phone').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                currency: document.getElementById('currency').value,
+                exchangeRate: parseFloat(document.getElementById('exchange-rate').value) || 1,
+                fees: parseFloat(document.getElementById('fees').value) || 0,
+                destinationCountry: document.getElementById('destination-country').value,
+                purpose: document.getElementById('purpose').value,
+                status: 'pending',
+                createdAt: new Date().toISOString()
+            };
+            
+            transfers.push(transfer);
+            saveTransfers();
+            updateDashboard();
+            displayTransfers();
+            
+            // Reset form
+            this.reset();
+            
+            // Show success message
+            alert(currentLanguage === 'en' ? 'Transfer created successfully!' : 'تم إنشاء التحويل بنجاح!');
+            
+            // Switch to transfers tab
+            showTab('transfers');
+            document.querySelector('[onclick="showTab(\'transfers\')"]').classList.add('active');
+            document.querySelector('[onclick="showTab(\'new-transfer\')"]').classList.remove('active');
+        });
+
+        // Save transfers to localStorage
+        function saveTransfers() {
+    localStorage.setItem('transfersData', JSON.stringify(transfers));
+}
+
+        // Load transfers from localStorage
+        function loadTransfers() {
+    try {
+        transfers = JSON.parse(localStorage.getItem('transfersData') || '[]');
+    } catch (e) {
+        transfers = [];
+    }
+} catch (e) {
+                transfers = [];
+            }
+        }
+
+        // Update dashboard statistics
+        function updateDashboard() {
+            const totalTransfers = transfers.length;
+            const totalAmount = transfers.reduce((sum, t) => sum + t.amount, 0);
+            const pendingTransfers = transfers.filter(t => t.status === 'pending').length;
+            const completedTransfers = transfers.filter(t => t.status === 'completed').length;
+            
+            document.getElementById('total-transfers').textContent = totalTransfers;
+            document.getElementById('total-amount').textContent = totalAmount.toLocaleString();
+            document.getElementById('pending-transfers').textContent = pendingTransfers;
+            document.getElementById('completed-transfers').textContent = completedTransfers;
+            
+            // Display recent transfers
+            displayRecentTransfers();
+        }
+
+        // Display recent transfers on dashboard
+        function displayRecentTransfers() {
+            const recentList = document.getElementById('recent-transfers-list');
+            const recentTransfers = transfers.slice(-5).reverse();
+            
+            if (recentTransfers.length === 0) {
+                recentList.innerHTML = `<div class="no-data">${currentLanguage === 'en' ? 'No transfers yet' : 'لا توجد تحويلات بعد'}</div>`;
+                return;
+            }
+            
+            recentList.innerHTML = recentTransfers.map(transfer => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #ecf0f1;">
+                    <div>
+                        <strong>${transfer.id}</strong><br>
+                        <small>${transfer.senderName} → ${transfer.receiverName}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>${getCurrencySymbol(transfer.currency)}${transfer.amount.toLocaleString()}</strong><br>
+                        <span class="status-badge status-${transfer.status}">${transfer.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get currency symbol
+        function getCurrencySymbol(code) {
+            const currency = currencies.find(c => c.code === code);
+            return currency ? currency.symbol : ';
+        }
+
+        // Display all transfers
+        function displayTransfers() {
+            const tbody = document.getElementById('transfers-tbody');
+            const transfersToShow = filteredTransfers.length > 0 ? filteredTransfers : transfers;
+            
+            if (transfersToShow.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="no-data">${currentLanguage === 'en' ? 'No transfers found' : 'لا توجد تحويلات'}</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = transfersToShow.map(transfer => `
+                <tr>
+                    <td>${transfer.id}</td>
+                    <td>${transfer.date}</td>
+                    <td>${transfer.senderName}</td>
+                    <td>${transfer.receiverName}</td>
+                    <td>${getCurrencySymbol(transfer.currency)}${transfer.amount.toLocaleString()}</td>
+                    <td><span class="status-badge status-${transfer.status}">${transfer.status}</span></td>
+                    <td>
+                        <button class="btn" onclick="viewTransfer('${transfer.id}')" style="padding: 5px 10px; margin: 2px;">
+                            ${currentLanguage === 'en' ? 'View' : 'عرض'}
+                        </button>
+                        <button class="btn btn-warning" onclick="updateStatus('${transfer.id}')" style="padding: 5px 10px; margin: 2px;">
+                            ${currentLanguage === 'en' ? 'Update' : 'تحديث'}
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteTransfer('${transfer.id}')" style="padding: 5px 10px; margin: 2px;">
+                            ${currentLanguage === 'en' ? 'Delete' : 'حذف'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search transfers
+        function searchTransfers() {
+            const searchId = document.getElementById('search-id').value.toLowerCase();
+            const searchSender = document.getElementById('search-sender').value.toLowerCase();
+            const searchStatus = document.getElementById('search-status').value;
+            const searchDate = document.getElementById('search-date').value;
+            
+            filteredTransfers = transfers.filter(transfer => {
+                const matchId = !searchId || transfer.id.toLowerCase().includes(searchId);
+                const matchSender = !searchSender || transfer.senderName.toLowerCase().includes(searchSender);
+                const matchStatus = !searchStatus || transfer.status === searchStatus;
+                const matchDate = !searchDate || transfer.date === searchDate;
+                
+                return matchId && matchSender && matchStatus && matchDate;
+            });
+            
+            displayTransfers();
+        }
+
+        // Clear search
+        function clearSearch() {
+            document.getElementById('search-id').value = '';
+            document.getElementById('search-sender').value = '';
+            document.getElementById('search-status').value = '';
+            document.getElementById('search-date').value = '';
+            filteredTransfers = [];
+            displayTransfers();
+        }
+
+        // View transfer details
+        function viewTransfer(id) {
+            const transfer = transfers.find(t => t.id === id);
+            if (!transfer) return;
+            
+            const modalContent = document.getElementById('modal-content');
+            modalContent.innerHTML = `
+                <h3>${currentLanguage === 'en' ? 'Transfer Details' : 'تفاصيل التحويل'}</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div><strong>${currentLanguage === 'en' ? 'Transfer ID:' : 'رقم التحويل:'}</strong> ${transfer.id}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Date:' : 'التاريخ:'}</strong> ${transfer.date}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Sender:' : 'المرسل:'}</strong> ${transfer.senderName}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Sender Phone:' : 'هاتف المرسل:'}</strong> ${transfer.senderPhone}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Receiver:' : 'المستقبل:'}</strong> ${transfer.receiverName}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Receiver Phone:' : 'هاتف المستقبل:'}</strong> ${transfer.receiverPhone}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Amount:' : 'المبلغ:'}</strong> ${getCurrencySymbol(transfer.currency)}${transfer.amount.toLocaleString()}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Currency:' : 'العملة:'}</strong> ${transfer.currency}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Exchange Rate:' : 'سعر الصرف:'}</strong> ${transfer.exchangeRate}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Fees:' : 'الرسوم:'}</strong> ${getCurrencySymbol(transfer.currency)}${transfer.fees}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Destination:' : 'الوجهة:'}</strong> ${transfer.destinationCountry}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Purpose:' : 'الغرض:'}</strong> ${transfer.purpose}</div>
+                    <div><strong>${currentLanguage === 'en' ? 'Status:' : 'الحالة:'}</strong> <span class="status-badge status-${transfer.status}">${transfer.status}</span></div>
+                    <div><strong>${currentLanguage === 'en' ? 'Created:' : 'تم الإنشاء:'}</strong> ${new Date(transfer.createdAt).toLocaleString()}</div>
+                </div>
+            `;
+            
+            document.getElementById('transfer-modal').style.display = 'block';
+        }
+
+        // Update transfer status
+        function updateStatus(id) {
+            const transfer = transfers.find(t => t.id === id);
+            if (!transfer) return;
+            
+            const newStatus = prompt(
+                currentLanguage === 'en' ? 
+                'Enter new status (pending, completed, cancelled):' : 
+                'أدخل الحالة الجديدة (pending, completed, cancelled):',
+                transfer.status
+            );
+            
+            if (newStatus && ['pending', 'completed', 'cancelled'].includes(newStatus)) {
+                transfer.status = newStatus;
+                saveTransfers();
+                updateDashboard();
+                displayTransfers();
+                alert(currentLanguage === 'en' ? 'Status updated successfully!' : 'تم تحديث الحالة بنجاح!');
+            }
+        }
+
+        // Delete transfer
+        function deleteTransfer(id) {
+            if (confirm(currentLanguage === 'en' ? 'Are you sure you want to delete this transfer?' : 'هل أنت متأكد من حذف هذا التحويل؟')) {
+                transfers = transfers.filter(t => t.id !== id);
+                saveTransfers();
+                updateDashboard();
+                displayTransfers();
+                alert(currentLanguage === 'en' ? 'Transfer deleted successfully!' : 'تم حذف التحويل بنجاح!');
+            }
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('transfer-modal').style.display = 'none';
+        }
+
+        // Generate report
+        function generateReport() {
+            const startDate = document.getElementById('report-start-date').value;
+            const endDate = document.getElementById('report-end-date').value;
+            const currency = document.getElementById('report-currency').value;
+            const status = document.getElementById('report-status').value;
+            
+            let reportData = transfers.filter(transfer => {
+                const matchDate = (!startDate || transfer.date >= startDate) && 
+                                (!endDate || transfer.date <= endDate);
+                const matchCurrency = !currency || transfer.currency === currency;
+                const matchStatus = !status || transfer.status === status;
+                
+                return matchDate && matchCurrency && matchStatus;
+            });
+            
+            displayReportResults(reportData);
+        }
+
+        // Display report results
+        function displayReportResults(data) {
+            const container = document.getElementById('report-results');
+            
+            if (data.length === 0) {
+                container.innerHTML = `<div class="no-data">${currentLanguage === 'en' ? 'No data found for the selected criteria' : 'لا توجد بيانات للمعايير المحددة'}</div>`;
+                return;
+            }
+            
+            const totalAmount = data.reduce((sum, t) => sum + t.amount, 0);
+            const totalFees = data.reduce((sum, t) => sum + t.fees, 0);
+            const byStatus = {
+                pending: data.filter(t => t.status === 'pending').length,
+                completed: data.filter(t => t.status === 'completed').length,
+                cancelled: data.filter(t => t.status === 'cancelled').length
+            };
+            
+            // Group by currency
+            const byCurrency = {};
+            data.forEach(transfer => {
+                if (!byCurrency[transfer.currency]) {
+                    byCurrency[transfer.currency] = { count: 0, amount: 0 };
+                }
+                byCurrency[transfer.currency].count++;
+                byCurrency[transfer.currency].amount += transfer.amount;
+            });
+            
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${data.length}</div>
+                        <div class="stat-label">${currentLanguage === 'en' ? 'Total Transfers' : 'إجمالي التحويلات'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${totalAmount.toLocaleString()}</div>
+                        <div class="stat-label">${currentLanguage === 'en' ? 'Total Amount' : 'إجمالي المبلغ'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${totalFees.toLocaleString()}</div>
+                        <div class="stat-label">${currentLanguage === 'en' ? 'Total Fees' : 'إجمالي الرسوم'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${byStatus.completed}</div>
+                        <div class="stat-label">${currentLanguage === 'en' ? 'Completed' : 'مكتملة'}</div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>${currentLanguage === 'en' ? 'By Status' : 'حسب الحالة'}</h3>
+                    <div style="display: flex; gap: 20px; justify-content: center; margin: 20px 0;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #f39c12;">${byStatus.pending}</div>
+                            <div>${currentLanguage === 'en' ? 'Pending' : 'قيد الانتظار'}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #27ae60;">${byStatus.completed}</div>
+                            <div>${currentLanguage === 'en' ? 'Completed' : 'مكتملة'}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2em; color: #e74c3c;">${byStatus.cancelled}</div>
+                            <div>${currentLanguage === 'en' ? 'Cancelled' : 'ملغية'}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <h3>${currentLanguage === 'en' ? 'By Currency' : 'حسب العملة'}</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        ${Object.entries(byCurrency).map(([curr, info]) => `
+                            <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                                <div style="font-size: 1.5em; font-weight: bold;">${curr}</div>
+                                <div>${info.count} ${currentLanguage === 'en' ? 'transfers' : 'تحويل'}</div>
+                                <div>${getCurrencySymbol(curr)}${info.amount.toLocaleString()}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <table class="transfers-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>${currentLanguage === 'en' ? 'ID' : 'الرقم'}</th>
+                            <th>${currentLanguage === 'en' ? 'Date' : 'التاريخ'}</th>
+                            <th>${currentLanguage === 'en' ? 'Sender' : 'المرسل'}</th>
+                            <th>${currentLanguage === 'en' ? 'Amount' : 'المبلغ'}</th>
+                            <th>${currentLanguage === 'en' ? 'Status' : 'الحالة'}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(transfer => `
+                            <tr>
+                                <td>${transfer.id}</td>
+                                <td>${transfer.date}</td>
+                                <td>${transfer.senderName}</td>
+                                <td>${getCurrencySymbol(transfer.currency)}${transfer.amount.toLocaleString()}</td>
+                                <td><span class="status-badge status-${transfer.status}">${transfer.status}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            const data = filteredTransfers.length > 0 ? filteredTransfers : transfers;
+            if (data.length === 0) {
+                alert(currentLanguage === 'en' ? 'No data to export' : 'لا توجد بيانات للتصدير');
+                return;
+            }
+            
+            const headers = ['ID', 'Date', 'Sender Name', 'Sender Phone', 'Receiver Name', 'Receiver Phone', 'Amount', 'Currency', 'Exchange Rate', 'Fees', 'Destination Country', 'Purpose', 'Status'];
+            
+            const csvContent = [
+                headers.join(','),
+                ...data.map(transfer => [
+                    transfer.id,
+                    transfer.date,
+                    `"${transfer.senderName}"`,
+                    transfer.senderPhone,
+                    `"${transfer.receiverName}"`,
+                    transfer.receiverPhone,
+                    transfer.amount,
+                    transfer.currency,
+                    transfer.exchangeRate,
+                    transfer.fees,
+                    `"${transfer.destinationCountry}"`,
+                    transfer.purpose,
+                    transfer.status
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `transfers_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Export to PDF
+        function exportToPDF() {
+            const data = filteredTransfers.length > 0 ? filteredTransfers : transfers;
+            if (data.length === 0) {
+                alert(currentLanguage === 'en' ? 'No data to export' : 'لا توجد بيانات للتصدير');
+                return;
+            }
+            
+            // Create a simple PDF content
+            const content = `
+                <html>
+                <head>
+                    <title>Money Transfer Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        h1 { color: #333; text-align: center; }
+                        .summary { background: #f9f9f9; padding: 15px; margin: 20px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Money Transfer Report</h1>
+                    <div class="summary">
+                        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                        <p><strong>Total Transfers:</strong> ${data.length}</p>
+                        <p><strong>Total Amount:</strong> ${data.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}</p>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Sender</th>
+                                <th>Receiver</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(transfer => `
+                                <tr>
+                                    <td>${transfer.id}</td>
+                                    <td>${transfer.date}</td>
+                                    <td>${transfer.senderName}</td>
+                                    <td>${transfer.receiverName}</td>
+                                    <td>${transfer.amount.toLocaleString()}</td>
+                                    <td>${transfer.currency}</td>
+                                    <td>${transfer.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(content);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('transfer-modal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
